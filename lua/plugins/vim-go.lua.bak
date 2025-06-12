@@ -1,0 +1,8 @@
+-- lua/plugins/vim-go
+return{
+  "fatih/vim-go",              -- Go 专用工具集
+  ft = "go",
+  config = function()
+    vim.g.go_fmt_command = "goimports"  -- 自动整理 imports
+  end
+}

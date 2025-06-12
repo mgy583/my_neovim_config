@@ -1,0 +1,226 @@
+-- lua/plugins/lsp.lua
+return {
+    {
+        "williamboman/mason.nvim",
+        build = ":MasonUpdate",
+        cmd = "Mason",
+        config = function()
+            require("mason").setup({
+                ui = {
+                    icons = {
+                        package_installed = "✓",
+                        package_pending = "➜",
+                        package_uninstalled = "✗"
+                    }
+                }
+            })
+        end,
+    },
+    {
+        "williamboman/mason-lspconfig.nvim",
+        dependencies = {
+            "williamboman/mason.nvim",
+            "neovim/nvim-lspconfig",  -- 确保在 lspconfig 之前加载
+        },
+        -- dependencies = "mason.nvim",
+        config = function()
+            require("mason-lspconfig").setup({
+                ensure_installed = {
+                    "lua_ls",
+                    "pyright",
+                    "clangd",
+                    "rust_analyzer",
+                },
+                automatic_installation = false,
+            })
+        end
+    },
+    {
+        "neovim/nvim-lspconfig",
+        event = { "BufReadPre", "BufNewFile" },
+        dependencies = {
+            "mason.nvim",
+            "mason-lspconfig.nvim",
+            "hrsh7th/cmp-nvim-lsp",
+            {
+                "glepnir/lspsaga.nvim",
+                branch = "main",
+                config = true,
+                keys = {
+                    { "gh", "<cmd>Lspsaga lsp_finder<CR>", desc = "LSP Finder" },
+                    { "<leader>ca", "<cmd>Lspsaga code_action<CR>", desc = "Code Action" },
+                    { "gd", "<cmd>Lspsaga peek_definition<CR>", desc = "Peek Definition" },
+                    { "gr", "<cmd>Lspsaga rename<CR>", desc = "Rename" },
+                    { "<leader>cd", "<cmd>Lspsaga show_line_diagnostics<CR>", desc = "Line Diagnostics" },
+                }
+            }
+        },
+        config = function()
+            local lspconfig = require("lspconfig")
+            local cmp_nvim_lsp = require("cmp_nvim_lsp")
+            local capabilities = cmp_nvim_lsp.default_capabilities()
+            capabilities.textDocument.completion.completionItem.snippetSupport = true
+            capabilities.textDocument.completion.completionItem.resolveSupport = {
+                properties = { "documentation", "detail", "additionalTextEdits" },
+            }
+
+            -- 通用 LSP 配置
+            local on_attach = function(client, bufnr)
+                --
+                -- 按键映射
+                local opts = { buffer = bufnr, silent = true }
+                vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+                vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+                vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+            end
+
+            -- 配置各个语言服务器
+            local servers = {
+                lua_ls = {
+                    settings = {
+                        Lua = {
+                            runtime = { version = "LuaJIT" },
+                            diagnostics = { globals = { "vim" } },
+                            workspace = { checkThirdParty = false },
+                            telemetry = { enable = false },
+                        }
+                    }
+                },
+                pyright = {
+                    settings = {
+                        pyright = {
+                            disableOrganizeImports = false,
+                            analysis = {
+                                useLibraryCodeForTypes = true,
+                                autoSearchPaths = true,
+                                diagnosticMode = "workspace",
+                                typeCheckingMode = "basic"
+                            }
+                        }
+                    }
+                },
+                clangd = {
+                    capabilities = {
+                        offsetEncoding = "utf-8",
+                    }
+                },
+                rust_analyzer = {
+                    settings = {
+                        ["rust-analyzer"] = { -- 注意这里的键是 "rust-analyzer"（带中划线）
+                            checkOnSave = {
+                                command = "clippy",
+                                extraArgs = { "--all-targets", "--", "-D", "warnings" }
+                            },
+                            inlayHints = {
+                                typeHints = true,
+                                parameterHints = true,
+                                chainingHints = true,
+                            },
+                            procMacro = {
+                                enable = true,
+                                ignored = {
+                                    ["async-trait"] = { "async_trait" },
+                                    ["napi-derive"] = { "napi" },
+                                }
+                            },
+                            cargo = {
+                                buildScripts = {
+                                    enable = true,
+                                },
+                                features = "all",
+                            },
+                            completion = {
+                                autoimport = {
+                                    enable = true,
+                                },
+                                postfix = {
+                                    enable = true,
+                                }
+                            }
+                        }
+                    },
+                    workspace = {
+                        -- 添加单文件所在目录
+                        libraryDirectories = { vim.fn.expand("$HOME/go/pkg/mod") },
+                        -- 允许单文件模式
+                        usePlaceholders = true,
+                    }
+                }
+            }
+
+
+            for server, config in pairs(servers) do
+                lspconfig[server].setup(vim.tbl_deep_extend("force", {
+                    on_attach = on_attach,
+                    capabilities = capabilities,
+                }, config))
+            end
+        end
+    },
+    {
+        "hrsh7th/nvim-cmp",
+        event = "InsertEnter",
+        dependencies = {
+            "hrsh7th/cmp-buffer",
+            "hrsh7th/cmp-path",
+            "hrsh7th/cmp-nvim-lsp",
+            "hrsh7th/cmp-nvim-lua",
+            "saadparwaiz1/cmp_luasnip",
+            "L3MON4D3/LuaSnip",
+            "rafamadriz/friendly-snippets",
+        },
+        config = function()
+            local cmp = require("cmp")
+            local luasnip = require("luasnip")
+
+            -- 加载代码片段
+            require("luasnip.loaders.from_vscode").lazy_load()
+
+            cmp.setup({
+                snippet = {
+                    expand = function(args)
+                        luasnip.lsp_expand(args.body)
+                    end,
+                },
+                mapping = cmp.mapping.preset.insert({
+                    ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+                    ["<C-f>"] = cmp.mapping.scroll_docs(4),
+                    ["<C-Space>"] = cmp.mapping.complete(),
+                    ["<C-e>"] = cmp.mapping.abort(),
+                    ["<CR>"] = cmp.mapping.confirm({ select = true }),
+                    ["<Tab>"] = cmp.mapping(function(fallback)
+                        if cmp.visible() then
+                            cmp.select_next_item()
+                        elseif luasnip.expand_or_jumpable() then
+                            luasnip.expand_or_jump()
+                        else
+                            fallback()
+                        end
+                    end, { "i", "s" }),
+                }),
+                sources = cmp.config.sources({
+                    { name = "nvim_lsp" },
+                    { name = "luasnip" },
+                    { name = "buffer" },
+                    { name = "path" },
+                    { name = "nvim_lua" },
+                    { name = "cmdline" },
+                }),
+                formatting = {
+                    format = function(entry, vim_item)
+                        vim_item.menu = ({
+                            nvim_lsp = "[LSP]",
+                            luasnip = "[Snippet]",
+                            buffer = "[Buffer]",
+                            path = "[Path]",
+                        })[entry.source.name]
+                        return vim_item
+                    end
+                },
+                experimental = {
+                    ghost_text = true,
+                }
+            })
+        end
+    }
+}

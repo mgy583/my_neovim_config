@@ -1,0 +1,9 @@
+return{
+  "ray-x/go.nvim",             -- 增强的 Go 开发功能
+  dependencies = "ray-x/guihua.lua",
+  config = function()
+    require("go").setup({
+      lsp_keymaps = false,     -- 禁用默认按键映射
+    })
+  end
+}
