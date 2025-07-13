@@ -6,7 +6,7 @@ return {
   config = function()
     require("tokyonight").setup({
       style = "storm", -- 可选: storm | night | day
-      transparent = false, -- 启用透明背景
+      transparent = true, -- 启用透明背景
       styles = {
         sidebars = "transparent",
         floats = "transparent",
