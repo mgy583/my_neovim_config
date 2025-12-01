@@ -16,7 +16,7 @@ A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.
 
 1. Clone this repository to your Neovim config directory:
    ```bash
-   git clone https://github.com/mgy583/my_neovim_config.git ~/.config/nvim
+   git clone <repository-url> ~/.config/nvim
    ```
 
 2. Open Neovim - lazy.nvim will automatically bootstrap and install plugins:
@@ -48,7 +48,7 @@ Enter the development shell which provides Neovim configured to use this reposit
 
 ```bash
 # Clone the repository
-git clone https://github.com/mgy583/my_neovim_config.git
+git clone <repository-url>
 cd my_neovim_config
 
 # Enter the development shell
@@ -106,7 +106,7 @@ If you want to manage this configuration with Home Manager, you can reference th
 
   # Symlink this config to ~/.config/nvim
   xdg.configFile."nvim" = {
-    source = /path/to/my_neovim_config;
+    source = /path/to/your/neovim/config;  # Update this path
     recursive = true;
   };
 }
