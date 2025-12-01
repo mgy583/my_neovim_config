@@ -1,8 +1,21 @@
 {
-    description = "Neovim configuration with Nix development shell";
+    description = "Neovim configuration with Nix development shell and locked plugins";
+
+    # ============================================================================
+    # INPUTS
+    # ============================================================================
+    # nixpkgs is pinned via flake.lock for reproducible builds.
+    # The flake.lock file locks the exact nixpkgs revision, ensuring all plugins
+    # from pkgs.vimPlugins are at consistent versions.
+    #
+    # To update nixpkgs (and thus plugin versions):
+    #   nix flake update
+    #   git add flake.lock && git commit -m "Update nixpkgs"
+    # ============================================================================
 
     inputs = {
         # Use nixos-unstable for latest Neovim and packages
+        # Pin is managed by flake.lock for reproducibility
         nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     };
 
@@ -19,9 +32,71 @@
                 inherit system;
                 config.allowUnfree = true;
             };
+
+            # ============================================================================
+            # PLUGIN CONFIGURATION
+            # ============================================================================
+            # Plugins are defined in nix/neovim-plugins.nix and mapped from lazy-lock.json.
+            # Most plugins are available in pkgs.vimPlugins; others are built from source.
+            #
+            # Plugin sources:
+            # - pkgs.vimPlugins.*: Official nixpkgs plugin set (preferred)
+            # - buildVimPlugin: For plugins not in nixpkgs (uses fetchFromGitHub)
+            #
+            # To add a new plugin:
+            # 1. Check if it exists in nixpkgs: nix search nixpkgs vimPlugins.<name>
+            # 2. If yes, add to plugins list in nix/neovim-plugins.nix
+            # 3. If no, use buildVimPlugin with owner, repo, rev, sha256
+            # ============================================================================
+            neovimPluginsFor = system:
+                let pkgs = pkgsFor system;
+                in import ./nix/neovim-plugins.nix { inherit pkgs; };
+
+            # Build Neovim with plugins baked in
+            # This creates a standalone Neovim package with all plugins pre-installed
+            #
+            # Note: wrapNeovimUnstable is the standard nixpkgs function for wrapping Neovim
+            # with plugins. Despite the name, it is stable and widely used in nixpkgs.
+            # The "Unstable" refers to Neovim's plugin API, not the wrapper function itself.
+            # See: https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/editors/neovim/wrapper.nix
+            neovimWithPluginsFor = system:
+                let
+                    pkgs = pkgsFor system;
+                    pluginConfig = neovimPluginsFor system;
+
+                    # Configure Neovim with plugins
+                    neovimConfig = pkgs.neovimUtils.makeNeovimConfig {
+                        plugins = pluginConfig.plugins;
+                        # Don't include default plugins that might conflict
+                        withPython3 = true;
+                        withNodeJs = true;
+                        withRuby = false;
+                    };
+                in
+                    pkgs.wrapNeovimUnstable pkgs.neovim-unwrapped (neovimConfig // {
+                        # Allow the user's init.lua to load
+                        # The XDG_CONFIG_HOME should point to this repo for the config
+                        wrapperArgs = neovimConfig.wrapperArgs ++ [
+                            # Add runtime dependencies to PATH
+                            "--prefix" "PATH" ":" "${pkgs.lib.makeBinPath [
+                                pkgs.ripgrep
+                                pkgs.fd
+                                pkgs.git
+                                pkgs.tree-sitter
+                            ]}"
+                        ];
+                    });
         in
             {
-            # Development shell - enter with `nix develop`
+            # ============================================================================
+            # DEVELOPMENT SHELL
+            # ============================================================================
+            # Enter with: nix develop
+            #
+            # This shell provides Neovim and all dependencies for the traditional
+            # lazy.nvim-based workflow. Plugins are managed by lazy.nvim, not Nix.
+            # Use this for day-to-day development with hot-reload plugin updates.
+            # ============================================================================
             devShells = forAllSystems (system:
                 let
                     pkgs = pkgsFor system;
@@ -45,9 +120,10 @@
                             gcc
                             pkg-config
 
-                            # Lua tooling (optional, for plugin development)
+                            # Lua tooling (for plugin development and luarocks)
                             lua5_1
                             luajit
+                            luarocks
 
                             # Tree-sitter CLI for grammar compilation
                             tree-sitter
@@ -74,37 +150,95 @@
               trap cleanup EXIT
 
               echo ""
-              echo "Neovim development shell activated!"
-              echo "Config directory: $(pwd)"
-              echo "Run 'nvim' to start Neovim with this config"
+              echo "╔════════════════════════════════════════════════════════════════╗"
+              echo "║           Neovim Development Shell Activated                   ║"
+              echo "╠════════════════════════════════════════════════════════════════╣"
+              echo "║ Config directory: $(pwd)"
+              echo "║ Run 'nvim' to start Neovim with this config (lazy.nvim mode)   ║"
+              echo "║                                                                ║"
+              echo "║ For Nix-managed plugins, build with:                           ║"
+              echo "║   nix build .#neovim                                           ║"
+              echo "╚════════════════════════════════════════════════════════════════╝"
               echo ""
               '';
                     };
                 });
 
-            # Optional: Neovim package for standalone use
+            # ============================================================================
+            # NEOVIM PACKAGES
+            # ============================================================================
             # Build with: nix build .#neovim
+            # Run with: ./result/bin/nvim
+            #
+            # This builds Neovim with all plugins from nix/neovim-plugins.nix baked in.
+            # Plugins are locked via nixpkgs pinning in flake.lock.
+            #
+            # Two packages are available:
+            # - neovim: Neovim with plugins pre-installed
+            # - neovim-unwrapped: Base Neovim without plugins (for custom builds)
+            # ============================================================================
             packages = forAllSystems (system:
                 let
                     pkgs = pkgsFor system;
                 in
                     {
-                    neovim = pkgs.neovim;
+                    # Neovim with plugins baked in
+                    neovim = neovimWithPluginsFor system;
+
+                    # Base Neovim for reference/custom builds
+                    neovim-unwrapped = pkgs.neovim-unwrapped;
 
                     default = self.packages.${system}.neovim;
                 });
 
-            # Flake checks - validates the flake configuration
+            # ============================================================================
+            # FLAKE CHECKS
+            # ============================================================================
+            # Run with: nix flake check
+            #
+            # Validates that all outputs build successfully.
+            # CI uses this to ensure the flake is valid.
+            # ============================================================================
             checks = forAllSystems (system:
                 let
                     pkgs = pkgsFor system;
                 in
                     {
-                    # Verify Neovim package builds
+                    # Verify Neovim package with plugins builds
                     neovim = self.packages.${system}.neovim;
 
                     # Verify devShell builds
                     devShell = self.devShells.${system}.default;
                 });
+
+            # ============================================================================
+            # HOME-MANAGER MODULE (Optional)
+            # ============================================================================
+            # This module can be imported into a Home Manager configuration to use
+            # the Nix-managed plugins with programs.neovim.
+            #
+            # Usage in home.nix:
+            #   imports = [ inputs.my-neovim.homeModules.default ];
+            #   programs.neovim = {
+            #     enable = true;
+            #     # Additional configuration...
+            #   };
+            # ============================================================================
+            homeModules = {
+                default = { pkgs, ... }: {
+                    programs.neovim = {
+                        enable = true;
+                        plugins = (import ./nix/neovim-plugins.nix { inherit pkgs; }).plugins;
+                        extraPackages = with pkgs; [
+                            ripgrep
+                            fd
+                            git
+                            tree-sitter
+                            nodejs
+                            python3
+                        ];
+                    };
+                };
+            };
         };
 }
