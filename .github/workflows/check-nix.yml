@@ -6,11 +6,13 @@ on:
     paths:
       - 'flake.nix'
       - 'flake.lock'
+      - 'nix/**'
   pull_request:
     branches: [main, master]
     paths:
       - 'flake.nix'
       - 'flake.lock'
+      - 'nix/**'
   workflow_dispatch:
 
 permissions:
@@ -35,3 +37,11 @@ jobs:
 
       - name: Show flake outputs
         run: nix flake show
+
+      - name: Build Neovim package with plugins
+        run: nix build .#neovim --print-build-logs
+
+      - name: Verify Neovim binary exists
+        run: |
+          ls -la ./result/bin/
+          ./result/bin/nvim --version

@@ -86,6 +86,66 @@ nix build .#neovim
 | `nix flake check` | Validate the flake configuration |
 | `nix flake show` | Show available flake outputs |
 
+---
+
+## Nix / NixOS (Flake + Locked Plugins)
+
+This repository also supports **fully reproducible** Neovim builds with all plugins locked and managed by Nix. This approach "bakes in" all plugins at build time, ensuring identical environments across machines.
+
+### How It Works
+
+- Plugins are defined in `nix/neovim-plugins.nix` with pinned versions
+- The `flake.lock` file pins the exact nixpkgs revision
+- Plugins available in `nixpkgs.vimPlugins` use the stable nixpkgs versions
+- Plugins not in nixpkgs can be fetched from GitHub with pinned `rev` and `sha256`
+
+### Building Neovim with Baked-in Plugins
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd my_neovim_config
+
+# Build Neovim with all plugins pre-installed
+nix build .#neovim
+
+# Run the built Neovim
+./result/bin/nvim
+
+# Or run directly without building first
+nix run .#neovim
+```
+
+### Comparing Approaches
+
+| Feature | `nix develop` (lazy.nvim) | `nix build .#neovim` (Nix plugins) |
+|---------|---------------------------|-------------------------------------|
+| Plugin Manager | lazy.nvim | Nix (vimPlugins) |
+| Plugin Updates | `:Lazy update` | Update `nix/neovim-plugins.nix` |
+| Lazy Loading | Yes | No (all plugins loaded at start) |
+| Reproducibility | Via `lazy-lock.json` | Via `flake.lock` + pinned hashes |
+| Internet Required | First run | Only during build |
+| Best For | Development | Deployment, CI, NixOS systems |
+
+### Refreshing Plugin Pins
+
+To update the pinned plugins:
+
+1. **Update lazy-lock.json** (if using lazy.nvim for updates):
+   ```bash
+   nix develop --command nvim --headless "+Lazy! update" +qa
+   ```
+
+2. **Update nix/neovim-plugins.nix**:
+   - Copy the new commit SHAs from `lazy-lock.json` to the `rev` fields
+   - Update the `sha256` hashes (Nix will show the expected hash on mismatch)
+   - Or use nixpkgs versions which are automatically updated with nixpkgs
+
+3. **Update nixpkgs** (optional):
+   ```bash
+   nix flake lock --update-input nixpkgs
+   ```
+
 ### Home Manager Integration (Optional)
 
 If you want to manage this configuration with Home Manager, you can reference the flake's Neovim package or create a custom module. Here's a basic example:
@@ -109,6 +169,31 @@ If you want to manage this configuration with Home Manager, you can reference th
     source = /path/to/your/neovim/config;  # Update this path
     recursive = true;
   };
+}
+```
+
+For a fully Nix-managed approach with baked-in plugins:
+
+```nix
+# In your home.nix
+{ pkgs, inputs, ... }:
+let
+  # Import this repository's flake
+  neovim-config = inputs.my-neovim-config;
+in
+{
+  # Use the pre-built Neovim with plugins
+  home.packages = [
+    neovim-config.packages.${pkgs.system}.neovim
+  ];
+
+  # Add runtime dependencies
+  home.packages = with pkgs; [
+    ripgrep
+    fd
+    nodejs
+    python3
+  ];
 }
 ```
 
@@ -176,8 +261,11 @@ Mason manages LSP server installations independently. If Mason-installed servers
 │   │   ├── keymaps.lua   # Key mappings
 │   │   └── lazy.lua      # Plugin manager setup
 │   └── plugins/          # Plugin configurations
-├── lazy-lock.json        # Plugin lockfile
-└── flake.nix            # Nix flake configuration
+├── lazy-lock.json        # Plugin lockfile (lazy.nvim)
+├── flake.nix             # Nix flake configuration
+├── flake.lock            # Locked nixpkgs version
+└── nix/
+    └── neovim-plugins.nix  # Pinned plugin definitions for Nix
 ```
 
 ## License
