@@ -1,0 +1,34 @@
+name: Check Nix Flake
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Check flake
+        run: nix flake check --no-build
+
+      - name: Show flake outputs
+        run: nix flake show
