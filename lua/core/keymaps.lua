@@ -27,10 +27,15 @@ vim.g.clipboard = {
   cache_enabled = true,
 }
 
+
 -- 关键映射
 vim.api.nvim_set_keymap("v", "y", '"+y', { noremap = true, silent = true, desc = "copy" })
 vim.api.nvim_set_keymap("n", "yy", '"+yy', { noremap = true, silent = true, desc = "copy" })
 
 vim.api.nvim_set_keymap("n", "p", '"+p', { noremap = true, silent = true, desc = "paste" })
 vim.api.nvim_set_keymap("v", "p", '"+p', { noremap = true, silent = true, desc = "paste" })
+
+-- 自动选择系统剪贴板提供者，兼容：win32yank, clip.exe (WSL), pbcopy/pbpaste (macOS),
+-- wl-copy/wl-paste (Wayland), xclip/xsel (X11)
+-- 使用方式：在 init.lua 中 pcall(require, "clipboard") 即可自动启用；也可调用 require("clipboard").setup()
 
