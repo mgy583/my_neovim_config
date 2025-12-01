@@ -6,11 +6,13 @@ on:
     paths:
       - 'flake.nix'
       - 'flake.lock'
+      - 'nix/**'
   pull_request:
     branches: [main, master]
     paths:
       - 'flake.nix'
       - 'flake.lock'
+      - 'nix/**'
   workflow_dispatch:
 
 permissions:
@@ -30,8 +32,27 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      - name: Setup Nix cache
+        uses: cachix/cachix-action@v14
+        with:
+          name: nix-community
+          # Skip push to avoid needing write access
+          skipPush: true
+
       - name: Check flake
         run: nix flake check --no-build
 
       - name: Show flake outputs
         run: nix flake show
+
+      - name: Build Neovim with plugins
+        run: |
+          echo "Building Neovim with Nix-managed plugins..."
+          nix build .#neovim -L
+          echo "Build successful!"
+
+      - name: Verify Neovim runs
+        run: |
+          echo "Verifying Neovim starts correctly..."
+          ./result/bin/nvim --version
+          echo "Neovim verification complete!"

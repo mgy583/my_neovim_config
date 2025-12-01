@@ -1,6 +1,6 @@
 # My Neovim Configuration
 
-A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.nvim) as the plugin manager.
+A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.nvim) as the plugin manager, with optional Nix-based reproducible builds.
 
 ## Features
 
@@ -9,6 +9,7 @@ A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.
 - **Fuzzy Finding**: Telescope for file navigation and searching
 - **Syntax Highlighting**: Tree-sitter for advanced syntax highlighting
 - **UI Enhancements**: Tokyo Night theme, bufferline, lualine, and noice.nvim
+- **Nix Support**: Flake-based reproducible builds with locked plugin versions
 
 ## Quick Start
 
@@ -26,13 +27,12 @@ A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.
 
 ---
 
-## Nix / NixOS
+## Nix / NixOS (Flake + Locked Plugins)
 
-This repository includes a Nix flake for reproducible development environments. The flake provides:
+This repository includes a comprehensive Nix flake that provides **two workflows**:
 
-- A **development shell** with Neovim and all necessary dependencies
-- An optional **Neovim package** for standalone builds
-- Automatic configuration of `XDG_CONFIG_HOME` so Neovim uses this repo's config
+1. **Development Shell** (`nix develop`): Traditional lazy.nvim workflow with Nix-provided dependencies
+2. **Nix-Built Neovim** (`nix build .#neovim`): Fully reproducible Neovim with plugins baked in via Nix
 
 ### Prerequisites
 
@@ -42,126 +42,256 @@ This repository includes a Nix flake for reproducible development environments. 
   experimental-features = nix-command flakes
   ```
 
-### Using the Development Shell
-
-Enter the development shell which provides Neovim configured to use this repository:
+### Quick Commands
 
 ```bash
-# Clone the repository
+# Enter development shell (lazy.nvim manages plugins)
+nix develop
+
+# Build Neovim with plugins baked in
+nix build .#neovim
+
+# Run the Nix-built Neovim
+./result/bin/nvim
+
+# Validate the flake
+nix flake check
+
+# Show all available outputs
+nix flake show
+```
+
+### Option 1: Development Shell (lazy.nvim Workflow)
+
+The development shell provides Neovim and all system dependencies, while lazy.nvim manages plugins at runtime:
+
+```bash
+# Clone and enter the repository
 git clone <repository-url>
 cd my_neovim_config
 
 # Enter the development shell
 nix develop
 
-# Run Neovim (it will use this repo's config automatically)
+# Run Neovim (lazy.nvim will install plugins on first run)
 nvim
 ```
 
-The shell includes:
-- Neovim
-- ripgrep, fd, git (for Telescope and general usage)
-- Build tools (gcc, make, pkg-config) for native plugins
-- Lua, Node.js, Python for various plugins and LSP servers
-- Tree-sitter CLI for grammar compilation
+**Included tools:**
+- Neovim, ripgrep, fd, git
+- Build tools (gcc, make, pkg-config)
+- Lua 5.1, LuaJIT, Luarocks
+- Node.js, Python 3, Tree-sitter CLI
 
-### Building Neovim Package
+### Option 2: Nix-Built Neovim (Fully Reproducible)
 
-Build a standalone Neovim package:
+Build a standalone Neovim package with all plugins pre-installed via Nix:
 
 ```bash
-# Build Neovim
+# Build Neovim with all plugins
 nix build .#neovim
 
 # Run the built Neovim
 ./result/bin/nvim
+
+# Or run directly without building first
+nix run .#neovim
+```
+
+**Benefits of Nix-built Neovim:**
+- 100% reproducible builds
+- All plugins locked via nixpkgs pinning
+- No network access needed after build
+- Fast startup (plugins are pre-compiled)
+
+### Plugin Locking Strategy
+
+Plugins are locked through two mechanisms:
+
+| Mechanism | File | Purpose |
+|-----------|------|---------|
+| **nixpkgs pin** | `flake.lock` | Locks all `pkgs.vimPlugins.*` versions |
+| **lazy.nvim** | `lazy-lock.json` | Locks plugins for traditional workflow |
+
+The Nix plugin list in `nix/neovim-plugins.nix` maps lazy.nvim plugins to their nixpkgs equivalents. All 33+ plugins are available in `pkgs.vimPlugins`.
+
+### Updating Plugin Versions
+
+**For Nix workflow:**
+```bash
+# Update nixpkgs (updates all plugins)
+nix flake update
+
+# Rebuild to get new versions
+nix build .#neovim
+
+# Commit the lock file
+git add flake.lock && git commit -m "Update nixpkgs"
+```
+
+**For lazy.nvim workflow:**
+```bash
+# Inside nix develop or with Neovim installed
+nvim --headless "+Lazy! update" +qa
+
+# Commit the lock file
+git add lazy-lock.json && git commit -m "Update plugins"
+```
+
+### Home Manager Integration
+
+#### Option A: Import the Home Manager Module
+
+```nix
+# In your flake.nix inputs
+inputs.my-neovim.url = "github:<owner>/my_neovim_config";
+
+# In your home.nix or home-manager configuration
+{ inputs, pkgs, ... }:
+{
+  imports = [ inputs.my-neovim.homeModules.default ];
+
+  # The module provides:
+  # - programs.neovim.enable = true
+  # - programs.neovim.plugins = <all plugins from nix/neovim-plugins.nix>
+  # - programs.neovim.extraPackages = [ ripgrep fd git tree-sitter nodejs python3 ]
+}
+```
+
+#### Option B: Use the Package Directly
+
+```nix
+{ inputs, pkgs, ... }:
+{
+  home.packages = [
+    inputs.my-neovim.packages.${pkgs.system}.neovim
+  ];
+
+  # Symlink config files
+  xdg.configFile."nvim" = {
+    source = inputs.my-neovim;
+    recursive = true;
+  };
+}
+```
+
+#### Option C: Custom Plugin Selection
+
+```nix
+{ pkgs, ... }:
+let
+  neovimPlugins = import "${inputs.my-neovim}/nix/neovim-plugins.nix" { inherit pkgs; };
+in
+{
+  programs.neovim = {
+    enable = true;
+    plugins = neovimPlugins.plugins;
+    extraPackages = with pkgs; [ ripgrep fd git ];
+  };
+}
+```
+
+### NixOS Integration
+
+Add to your NixOS configuration:
+
+```nix
+# In your flake.nix
+{
+  inputs.my-neovim.url = "github:<owner>/my_neovim_config";
+}
+
+# In configuration.nix
+{ inputs, pkgs, ... }:
+{
+  environment.systemPackages = [
+    inputs.my-neovim.packages.${pkgs.system}.neovim
+  ];
+}
 ```
 
 ### Flake Commands Reference
 
 | Command | Description |
 |---------|-------------|
-| `nix develop` | Enter the development shell |
-| `nix build .#neovim` | Build Neovim package |
+| `nix develop` | Enter development shell (lazy.nvim workflow) |
+| `nix build .#neovim` | Build Neovim with plugins baked in |
+| `nix run .#neovim` | Build and run Neovim |
 | `nix flake check` | Validate the flake configuration |
-| `nix flake show` | Show available flake outputs |
+| `nix flake show` | Show all available flake outputs |
+| `nix flake update` | Update nixpkgs (and all plugins) |
 
-### Home Manager Integration (Optional)
+### Plugin Conversion Notes
 
-If you want to manage this configuration with Home Manager, you can reference the flake's Neovim package or create a custom module. Here's a basic example:
+All plugins from `lazy-lock.json` have been mapped to their nixpkgs equivalents:
 
-```nix
-# In your home.nix or home-manager configuration
-{ pkgs, ... }:
-{
-  programs.neovim = {
-    enable = true;
-    # Use the system Neovim and point to your config
-    extraPackages = with pkgs; [
-      ripgrep
-      fd
-      nodejs
-    ];
-  };
+| Category | Plugins | Source |
+|----------|---------|--------|
+| Core | plenary, nvim-web-devicons, nui | `pkgs.vimPlugins` |
+| Completion | nvim-cmp, cmp-*, luasnip, friendly-snippets | `pkgs.vimPlugins` |
+| LSP | nvim-lspconfig, lspsaga, mason | `pkgs.vimPlugins` |
+| Treesitter | nvim-treesitter (with grammars), textobjects, autotag | `pkgs.vimPlugins` |
+| Telescope | telescope, fzf-native, file-browser | `pkgs.vimPlugins` |
+| UI | tokyonight, alpha, bufferline, lualine, indent-blankline, notify, noice | `pkgs.vimPlugins` |
+| Editor | autopairs, surround, hop, nvim-tree | `pkgs.vimPlugins` |
+| Language | rust.vim | `pkgs.vimPlugins` |
 
-  # Symlink this config to ~/.config/nvim
-  xdg.configFile."nvim" = {
-    source = /path/to/your/neovim/config;  # Update this path
-    recursive = true;
-  };
-}
-```
+**Note:** `lazy.nvim` itself is NOT included in the Nix build since Nix manages plugins directly.
 
-### Keeping lazy.nvim Plugin Manager
+### Compatibility Notes
 
-This flake is designed to work alongside lazy.nvim. The plugin manager handles:
-- Plugin installation and updates
-- Lazy loading optimization
-- Plugin lockfile (`lazy-lock.json`)
+1. **Mason LSP Servers**: Mason-installed LSP servers work in both workflows. The devShell provides necessary build tools.
 
-Nix provides the system dependencies while lazy.nvim manages Neovim plugins. This gives you:
-- Reproducible system environment via Nix
-- Familiar plugin management workflow
-- Easy updates with `:Lazy update`
+2. **Treesitter Grammars**: The Nix build includes pre-compiled grammars. The lazy.nvim workflow compiles them on first use.
+
+3. **Native Plugins**: `telescope-fzf-native` requires compilation. Both workflows handle this:
+   - Nix: Pre-compiled via nixpkgs
+   - lazy.nvim: Compiled on install via `build = "make"`
+
+4. **Luarocks**: Disabled in this config. If needed, enable in lazy.lua and add `luarocks` to devShell.
 
 ### Troubleshooting
 
-#### Luarocks / Native Module Issues
+#### Build Failures
 
-This configuration has Luarocks disabled in lazy.nvim:
-```lua
-rocks = {
-    hererocks = false,
-    enabled = false
-}
-```
-
-If you need Luarocks support, you may need to adjust the lazy.nvim configuration and add `luarocks` to the devShell packages.
-
-#### First Run Plugin Installation
-
-On first run, lazy.nvim will clone and install all plugins. Ensure you have internet access and wait for the installation to complete.
-
-#### Permission Issues
-
-If you encounter permission errors:
-- Ensure the repository is cloned to a writable location
-- Check that `~/.local/share/nvim` is writable (for plugin data)
-- The devShell creates a temporary symlink; ensure parent directories exist
-
-#### Headless Installation
-
-To install plugins headlessly (useful for CI/scripts):
 ```bash
-nix develop --command nvim --headless "+Lazy! sync" +qa
+# Check flake syntax
+nix flake check
+
+# Show detailed build logs
+nix build .#neovim -L
+
+# Test in isolation
+nix develop -c nvim --version
 ```
 
-#### Mason LSP Servers
+#### Plugin Not Found
 
-Mason manages LSP server installations independently. If Mason-installed servers don't work:
-1. Ensure the required build tools are available (the devShell provides common ones)
-2. Run `:Mason` to check installation status
-3. Some servers may need additional system dependencies not in the devShell
+If a plugin is missing from nixpkgs, add it to `nix/neovim-plugins.nix`:
+
+```nix
+# Use buildVimPlugin for custom plugins
+(buildVimPlugin {
+  pname = "my-plugin";
+  owner = "github-owner";
+  repo = "plugin-repo";
+  rev = "commit-sha";
+  sha256 = ""; # Run nix build, Nix will tell you the correct hash
+})
+```
+
+#### Config Not Loading
+
+Ensure `XDG_CONFIG_HOME` points to the config directory:
+
+```bash
+# In nix develop, this is set automatically
+echo $XDG_CONFIG_HOME
+
+# For nix build output, set manually or symlink:
+ln -s /path/to/my_neovim_config ~/.config/nvim
+./result/bin/nvim
+```
 
 ---
 
@@ -176,8 +306,11 @@ Mason manages LSP server installations independently. If Mason-installed servers
 │   │   ├── keymaps.lua   # Key mappings
 │   │   └── lazy.lua      # Plugin manager setup
 │   └── plugins/          # Plugin configurations
-├── lazy-lock.json        # Plugin lockfile
-└── flake.nix            # Nix flake configuration
+├── nix/
+│   └── neovim-plugins.nix # Nix plugin definitions (converted from lazy-lock.json)
+├── lazy-lock.json        # Plugin lockfile (lazy.nvim)
+├── flake.nix             # Nix flake configuration
+└── flake.lock            # Nixpkgs version lock
 ```
 
 ## License
