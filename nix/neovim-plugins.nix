@@ -370,15 +370,4 @@ in
       sha256 = "sha256-WqF0XGJI5EeSp0j+8OvBNLR8FHlMHl7CKQJL7BnPTQA=";
     })
   ];
-
-  # ============================================================================
-  # COMBINED PLUGIN LIST FOR NEOVIM
-  # ============================================================================
-  # Use this in your Neovim configuration
-
-  # All plugins combined (nixpkgs versions preferred for better integration)
-  allPlugins = nixpkgsPlugins;
-
-  # Use pinned versions if you need exact version matching with lazy.nvim
-  # allPlugins = pinnedPlugins;
 }

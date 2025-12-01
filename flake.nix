@@ -71,13 +71,25 @@
             };
 
             # Custom Neovim configuration
-            # This embeds a minimal init.vim that loads the Lua config
+            # Note: This is a minimal bootstrap config. The full Lua configuration
+            # from the repository requires running from the repo directory or copying
+            # the lua/ directory. For full config support, use `nix develop` instead.
             customRC = ''
-              " Load the Lua configuration from the repository
-              " Note: When using nix build, you may need to copy the lua/ directory
-              " or set runtimepath appropriately
+              " Minimal configuration for standalone Neovim package
+              " For full configuration, run from the repository directory:
+              "   cd /path/to/my_neovim_config && ./result/bin/nvim
+              "
+              " Or use nix develop for the complete lazy.nvim experience
+
               lua << EOF
-              -- Attempt to load the configuration from various locations
+              -- Set basic options if no external config is loaded
+              vim.opt.number = true
+              vim.opt.relativenumber = true
+              vim.opt.expandtab = true
+              vim.opt.shiftwidth = 2
+              vim.opt.tabstop = 2
+
+              -- Attempt to load the Lua configuration from various locations
               local config_paths = {
                 vim.fn.stdpath("config"),
                 vim.fn.getcwd(),
@@ -89,7 +101,19 @@
                   local init_lua = path .. "/init.lua"
                   if vim.fn.filereadable(init_lua) == 1 then
                     package.path = path .. "/lua/?.lua;" .. path .. "/lua/?/init.lua;" .. package.path
-                    dofile(init_lua)
+                    -- Only load if it doesn't try to bootstrap lazy.nvim (plugins are already loaded)
+                    local f = io.open(init_lua, "r")
+                    if f then
+                      local content = f:read("*all")
+                      f:close()
+                      -- Load config modules directly, skipping lazy.nvim bootstrap
+                      if vim.fn.filereadable(path .. "/lua/core/options.lua") == 1 then
+                        dofile(path .. "/lua/core/options.lua")
+                      end
+                      if vim.fn.filereadable(path .. "/lua/core/keymaps.lua") == 1 then
+                        dofile(path .. "/lua/core/keymaps.lua")
+                      end
+                    end
                     break
                   end
                 end

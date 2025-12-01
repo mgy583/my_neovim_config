@@ -16,7 +16,7 @@ A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.
 
 1. Clone this repository to your Neovim config directory:
    ```bash
-   git clone <repository-url> ~/.config/nvim
+   git clone https://github.com/mgy583/my_neovim_config ~/.config/nvim
    ```
 
 2. Open Neovim - lazy.nvim will automatically bootstrap and install plugins:
@@ -48,7 +48,7 @@ Enter the development shell which provides Neovim configured to use this reposit
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/mgy583/my_neovim_config
 cd my_neovim_config
 
 # Enter the development shell
@@ -103,7 +103,7 @@ This repository also supports **fully reproducible** Neovim builds with all plug
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/mgy583/my_neovim_config
 cd my_neovim_config
 
 # Build Neovim with all plugins pre-installed
@@ -175,24 +175,24 @@ If you want to manage this configuration with Home Manager, you can reference th
 For a fully Nix-managed approach with baked-in plugins:
 
 ```nix
+# In your flake.nix inputs:
+# inputs.my-neovim-config.url = "github:mgy583/my_neovim_config";
+
 # In your home.nix
 { pkgs, inputs, ... }:
 let
-  # Import this repository's flake
+  # Reference this repository's flake (must be added to your flake inputs)
   neovim-config = inputs.my-neovim-config;
 in
 {
   # Use the pre-built Neovim with plugins
   home.packages = [
     neovim-config.packages.${pkgs.system}.neovim
-  ];
-
-  # Add runtime dependencies
-  home.packages = with pkgs; [
-    ripgrep
-    fd
-    nodejs
-    python3
+    # Add runtime dependencies
+    pkgs.ripgrep
+    pkgs.fd
+    pkgs.nodejs
+    pkgs.python3
   ];
 }
 ```
