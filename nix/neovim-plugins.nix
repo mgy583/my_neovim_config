@@ -19,6 +19,12 @@
 
 let
   # Helper function to build a vim plugin from GitHub
+  # Parameters:
+  #   pname  - Plugin name (used as package name)
+  #   owner  - GitHub repository owner
+  #   repo   - GitHub repository name
+  #   rev    - Git commit SHA (required for reproducibility)
+  #   sha256 - Hash of the source (run `nix build` with empty string "", Nix will report correct hash)
   buildVimPlugin = { pname, owner, repo, rev, sha256 }:
     pkgs.vimUtils.buildVimPlugin {
       inherit pname;

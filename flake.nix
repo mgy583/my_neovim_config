@@ -54,6 +54,11 @@
 
             # Build Neovim with plugins baked in
             # This creates a standalone Neovim package with all plugins pre-installed
+            #
+            # Note: wrapNeovimUnstable is the standard nixpkgs function for wrapping Neovim
+            # with plugins. Despite the name, it is stable and widely used in nixpkgs.
+            # The "Unstable" refers to Neovim's plugin API, not the wrapper function itself.
+            # See: https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/editors/neovim/wrapper.nix
             neovimWithPluginsFor = system:
                 let
                     pkgs = pkgsFor system;

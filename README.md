@@ -248,7 +248,7 @@ All plugins from `lazy-lock.json` have been mapped to their nixpkgs equivalents:
    - Nix: Pre-compiled via nixpkgs
    - lazy.nvim: Compiled on install via `build = "make"`
 
-4. **Luarocks**: Disabled in this config. If needed, enable in lazy.lua and add `luarocks` to devShell.
+4. **Luarocks**: Disabled in this config. If needed, enable in `lua/core/lazy.lua` and add `luarocks` to devShell.
 
 ### Troubleshooting
 
