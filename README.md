@@ -5,10 +5,17 @@ A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.
 ## Features
 
 - **Plugin Management**: Uses lazy.nvim for fast, lazy-loading plugin management
-- **LSP Support**: Built-in LSP configuration with Mason for easy language server installation
-- **Fuzzy Finding**: Telescope for file navigation and searching
+- **File Explorer**: Neo-tree with git integration and modern UI
+- **LSP Support**: Full LSP configuration with Mason, nvim-lspconfig, and lspsaga
+- **Autocompletion**: nvim-cmp with multiple sources (LSP, buffer, path, snippets)
+- **Fuzzy Finding**: Telescope for file navigation, searching, and more
 - **Syntax Highlighting**: Tree-sitter for advanced syntax highlighting
-- **UI Enhancements**: Tokyo Night theme, bufferline, lualine, and noice.nvim
+- **Git Integration**: Gitsigns for git decorations and hunks management
+- **Code Formatting**: none-ls (null-ls successor) with support for multiple formatters
+- **Terminal**: Toggleterm for integrated terminal with floating window support
+- **Code Commenting**: Comment.nvim with treesitter context awareness
+- **Keybinding Hints**: which-key for discovering and learning keybindings
+- **UI Enhancements**: Tokyo Night theme, bufferline, lualine, noice.nvim, indent-blankline
 
 ## Quick Start
 
@@ -259,14 +266,69 @@ Mason manages LSP server installations independently. If Mason-installed servers
 │   ├── core/
 │   │   ├── options.lua   # Neovim options
 │   │   ├── keymaps.lua   # Key mappings
+│   │   ├── autocmds.lua  # Autocommands
 │   │   └── lazy.lua      # Plugin manager setup
 │   └── plugins/          # Plugin configurations
+│       ├── init.lua      # Plugin manifest
+│       ├── neo-tree.lua  # File explorer
+│       ├── which-key.lua # Keybinding hints
+│       ├── telescope.lua # Fuzzy finder
+│       ├── lsp.lua       # LSP configuration
+│       ├── nvim-treesitter.lua  # Syntax highlighting
+│       ├── nvim-cmp.lua  # Autocompletion (in lsp.lua)
+│       ├── gitsigns.lua  # Git integration
+│       ├── none-ls.lua   # Formatting & linting
+│       ├── comment.lua   # Code commenting
+│       ├── toggleterm.lua # Terminal integration
+│       ├── bufferline.lua # Buffer tabs
+│       ├── lualine.lua   # Status line
+│       ├── alpha.lua     # Dashboard
+│       ├── noice.lua     # Enhanced UI
+│       ├── indent-blankline.lua # Indent guides
+│       ├── nvim-autopairs.lua # Auto pairs
+│       ├── nvim-surround.lua  # Surround operations
+│       └── tokyonight.lua # Color scheme
 ├── lazy-lock.json        # Plugin lockfile (lazy.nvim)
 ├── flake.nix             # Nix flake configuration
 ├── flake.lock            # Locked nixpkgs version
 └── nix/
     └── neovim-plugins.nix  # Pinned plugin definitions for Nix
 ```
+
+## Key Plugins
+
+### Core Functionality
+- **[lazy.nvim](https://github.com/folke/lazy.nvim)**: Fast and flexible plugin manager
+- **[neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim)**: Modern file explorer with git integration
+- **[telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)**: Fuzzy finder for files, buffers, and more
+- **[which-key.nvim](https://github.com/folke/which-key.nvim)**: Display keybinding hints in a popup
+
+### LSP & Completion
+- **[nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)**: LSP configuration
+- **[mason.nvim](https://github.com/williamboman/mason.nvim)**: LSP server installer
+- **[nvim-cmp](https://github.com/hrsh7th/nvim-cmp)**: Autocompletion engine
+- **[lspsaga.nvim](https://github.com/glepnir/lspsaga.nvim)**: Enhanced LSP UI
+
+### Code Editing
+- **[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)**: Advanced syntax highlighting
+- **[Comment.nvim](https://github.com/numToStr/Comment.nvim)**: Smart code commenting
+- **[nvim-autopairs](https://github.com/windwp/nvim-autopairs)**: Auto close brackets and quotes
+- **[nvim-surround](https://github.com/kylechui/nvim-surround)**: Surround text objects
+- **[none-ls.nvim](https://github.com/nvimtools/none-ls.nvim)**: Formatting and linting (null-ls successor)
+
+### Git Integration
+- **[gitsigns.nvim](https://github.com/lewis6991/gitsigns.nvim)**: Git decorations and hunk management
+
+### UI & Interface
+- **[tokyonight.nvim](https://github.com/folke/tokyonight.nvim)**: Beautiful color scheme
+- **[lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)**: Fast and customizable statusline
+- **[bufferline.nvim](https://github.com/akinsho/bufferline.nvim)**: Buffer tabs UI
+- **[alpha-nvim](https://github.com/goolord/alpha-nvim)**: Dashboard and welcome screen
+- **[noice.nvim](https://github.com/folke/noice.nvim)**: Enhanced UI for messages, cmdline, and popupmenu
+- **[indent-blankline.nvim](https://github.com/lukas-reineke/indent-blankline.nvim)**: Indent guides
+
+### Terminal & Tools
+- **[toggleterm.nvim](https://github.com/akinsho/toggleterm.nvim)**: Integrated terminal with floating window support
 
 ## License
 
