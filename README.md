@@ -6,6 +6,8 @@ A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.
 
 - **Plugin Management**: Uses lazy.nvim for fast, lazy-loading plugin management
 - **LSP Support**: Built-in LSP configuration with Mason for easy language server installation
+- **File Explorer**: Neo-tree with LazyVim-style appearance (tree view, rounded borders, custom icons)
+- **Keybinding Guide**: Which-key for discoverable keybindings and command hints
 - **Fuzzy Finding**: Telescope for file navigation and searching
 - **Syntax Highlighting**: Tree-sitter for advanced syntax highlighting
 - **UI Enhancements**: Tokyo Night theme, bufferline, lualine, and noice.nvim
@@ -249,6 +251,73 @@ Mason manages LSP server installations independently. If Mason-installed servers
 3. Some servers may need additional system dependencies not in the devShell
 
 ---
+
+## Key Bindings
+
+The configuration uses **which-key** to provide discoverable keybindings. Press `<leader>` (space) to see available commands.
+
+### Main Keybinding Groups
+
+- `<leader>e` - **Explorer**: File tree operations
+  - `<leader>ee` - Toggle Neo-tree file explorer
+  - `<leader>ef` - Focus Neo-tree
+  - `<leader>er` - Reveal current file in Neo-tree
+
+- `<leader>f` - **Find/File**: Fuzzy finding with Telescope
+  - `<leader>ff` - Find files
+  - `<leader>fg` - Live grep (search in files)
+  - `<leader>fb` - Browse open buffers
+  - `<leader>fh` - Search help tags
+  - `<leader>fr` - Recent files
+  - `<leader>fw` - Find word under cursor
+
+- `<leader>l` - **LSP**: Language server operations
+  - `<leader>ld` - Go to definition
+  - `<leader>lD` - Go to declaration
+  - `<leader>lh` - Hover documentation
+  - `<leader>li` - Go to implementation
+  - `<leader>lr` - Find references
+  - `<leader>lR` - Rename symbol
+  - `<leader>la` - Code action
+  - `<leader>lf` - Format code
+
+- `<leader>s` - **Split**: Window splitting
+  - `<leader>sv` - Split vertical
+  - `<leader>sh` - Split horizontal
+
+- `<leader>b` - **Buffer**: Buffer management
+  - `<leader>bd` - Delete buffer
+  - `<leader>bn` - Next buffer
+  - `<leader>bp` - Previous buffer
+
+- `<leader>g` - **Git**: Git operations via Telescope
+  - `<leader>gs` - Git status
+  - `<leader>gc` - Git commits
+  - `<leader>gb` - Git branches
+
+- `<leader>w` - **Window**: Window navigation
+  - `<leader>wh/j/k/l` - Move to left/down/up/right window
+  - `<leader>wc` - Close window
+  - `<leader>wo` - Close other windows
+
+- `<leader>t` - **Terminal/Tab**: Terminal and tab management
+  - `<leader>tt` - Open terminal
+  - `<leader>tn` - New tab
+  - `<leader>tc` - Close tab
+
+### Neo-tree Navigation
+
+Once Neo-tree is open, you can use:
+- `<CR>` or `l` - Open file/directory
+- `<space>` - Toggle directory node
+- `a` - Add file
+- `A` - Add directory
+- `d` - Delete
+- `r` - Rename
+- `s` - Open in vertical split
+- `S` - Open in horizontal split
+- `q` - Close Neo-tree
+- `?` - Show help
 
 ## Configuration Structure
 
