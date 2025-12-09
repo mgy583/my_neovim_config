@@ -17,10 +17,23 @@ autocmd("TextYankPost", {
     end,
 })
 
--- Remove whitespace on save
+-- Remove whitespace on save (with restrictions for performance)
 autocmd("BufWritePre", {
     pattern = "*",
     callback = function()
+        -- Skip for large files (> 1MB)
+        local max_filesize = 1024 * 1024
+        local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(0))
+        if ok and stats and stats.size > max_filesize then
+            return
+        end
+        
+        -- Skip for certain filetypes
+        local exclude_ft = { "markdown", "diff" }
+        if vim.tbl_contains(exclude_ft, vim.bo.filetype) then
+            return
+        end
+        
         local save_cursor = vim.fn.getpos(".")
         vim.cmd([[%s/\s\+$//e]])
         vim.fn.setpos(".", save_cursor)

@@ -100,7 +100,7 @@ return {
                             vim.lsp.buf.format({
                                 bufnr = bufnr,
                                 filter = function(client)
-                                    return client.name == "null-ls"
+                                    return client.name == "null-ls" or client.name == "none-ls"
                                 end,
                             })
                         end,
