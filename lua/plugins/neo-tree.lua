@@ -9,15 +9,16 @@ return {
     },
     cmd = "Neotree",
     keys = {
-        { "<leader>ee", "<cmd>Neotree toggle<cr>", desc = "Toggle Explorer" },
-        { "<leader>ef", "<cmd>Neotree focus<cr>", desc = "Focus Explorer" },
+        { "<leader>e", ":Neotree toggle<CR>", desc = "Toggle Explorer" },
+        { "<leader>ee", ":Neotree toggle<CR>", desc = "Toggle Explorer" },
+        { "<leader>ef", ":Neotree focus<CR>", desc = "Focus Explorer" },
+        { "<leader>er", ":Neotree reveal<CR>", desc = "Reveal in Explorer" },
     },
     opts = {
         close_if_last_window = true,
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
-        
         default_component_configs = {
             container = {
                 enable_character_fade = true
@@ -29,15 +30,20 @@ return {
                 indent_marker = "│",
                 last_indent_marker = "└",
                 highlight = "NeoTreeIndentMarker",
+                with_expanders = true,
+                expander_collapsed = "",
+                expander_expanded = "",
+                expander_highlight = "NeoTreeExpander",
             },
             icon = {
                 folder_closed = "",
                 folder_open = "",
-                folder_empty = "󰜌",
+                folder_empty = "",
                 default = "",
+                highlight = "NeoTreeFileIcon"
             },
             modified = {
-                symbol = "[+]",
+                symbol = "●",
                 highlight = "NeoTreeModified",
             },
             name = {
@@ -50,16 +56,15 @@ return {
                     added     = "✚",
                     modified  = "",
                     deleted   = "✖",
-                    renamed   = "󰁕",
-                    untracked = "",
-                    ignored   = "",
-                    unstaged  = "󰄱",
-                    staged    = "",
+                    renamed   = "➜",
+                    untracked = "★",
+                    ignored   = "◌",
+                    unstaged  = "✗",
+                    staged    = "✓",
                     conflict  = "",
                 }
             },
         },
-        
         window = {
             position = "left",
             width = 35,
@@ -68,15 +73,12 @@ return {
                 nowait = true,
             },
             mappings = {
-                ["<space>"] = { 
-                    "toggle_node", 
-                    nowait = false,
-                },
+                ["<space>"] = "toggle_node",
                 ["<2-LeftMouse>"] = "open",
                 ["<cr>"] = "open",
                 ["<esc>"] = "cancel",
-                ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = true } },
-                ["l"] = "focus_preview",
+                ["P"] = { "toggle_preview", config = { use_float = true } },
+                ["l"] = "open",
                 ["S"] = "open_split",
                 ["s"] = "open_vsplit",
                 ["t"] = "open_tabnew",
@@ -105,16 +107,13 @@ return {
                 ["i"] = "show_file_details",
             }
         },
-        
         filesystem = {
             filtered_items = {
                 visible = false,
                 hide_dotfiles = false,
                 hide_gitignored = false,
-                hide_hidden = false,
-                hide_by_name = {
-                    "node_modules"
-                },
+                hide_hidden = true,
+                hide_by_name = {},
                 hide_by_pattern = {},
                 always_show = {},
                 never_show = {},
@@ -156,6 +155,51 @@ return {
                 },
             },
         },
+        buffers = {
+            follow_current_file = {
+                enabled = true,
+                leave_dirs_open = false,
+            },
+            group_empty_dirs = true,
+            show_unloaded = true,
+        },
+        git_status = {
+            window = {
+                position = "float",
+                mappings = {
+                    ["A"]  = "git_add_all",
+                    ["gu"] = "git_unstage_file",
+                    ["ga"] = "git_add_file",
+                    ["gr"] = "git_revert_file",
+                    ["gc"] = "git_commit",
+                    ["gp"] = "git_push",
+                    ["gg"] = "git_commit_and_push",
+                }
+            }
+        },
+        event_handlers = {
+            {
+                event = "neo_tree_buffer_enter",
+                handler = function()
+                    vim.cmd [[
+                        setlocal relativenumber
+                    ]]
+                end
+            }
+        },
     },
+    config = function(_, opts)
+        -- Custom highlights for neo-tree styling
+        vim.cmd([[
+            highlight NeoTreeNormal guibg=#1a1b26
+            highlight NeoTreeNormalNC guibg=#1a1b26
+            highlight NeoTreeEndOfBuffer guibg=#1a1b26
+            highlight NeoTreeWinSeparator guifg=#3d59a1 guibg=#1a1b26
+            highlight NeoTreeFloatBorder guifg=#3d59a1 guibg=#1a1b26
+            highlight NeoTreeTitleBar guifg=#c0caf5 guibg=#3d59a1
+        ]])
+        
+        require("neo-tree").setup(opts)
+    end,
 }
 
