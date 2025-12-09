@@ -2,6 +2,10 @@
 
 A personal Neovim configuration using [lazy.nvim](https://github.com/folke/lazy.nvim) as the plugin manager.
 
+> **New to this config?** Check out the [Quick Start Guide](QUICKSTART.md) for a beginner-friendly introduction!
+>
+> **Looking for keybindings?** See [KEYBINDINGS.md](KEYBINDINGS.md) for a complete reference.
+
 ## Features
 
 - **Plugin Management**: Uses lazy.nvim for fast, lazy-loading plugin management
