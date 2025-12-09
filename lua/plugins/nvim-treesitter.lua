@@ -13,6 +13,7 @@ return {
     dependencies = {
       "nvim-treesitter/nvim-treesitter-textobjects",
       "windwp/nvim-ts-autotag",
+      "JoosepAlviste/nvim-ts-context-commentstring",
      -- "mrjones2014/nvim-ts-rainbow",
     },
     opts = {
@@ -76,6 +77,11 @@ return {
         },
       },
 
+      -- ███ 上下文注释 ███
+      context_commentstring = {
+        enable = true,
+        enable_autocmd = false,
+      },
 
       -- ███ 折叠配置 ███
     fold = {
